@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Soccer Nine Probability Masterclass</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary: #2980b9;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --text: #2c3e50;
+            --bg: #ecf0f1;
+            --panel-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Bar */
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        /* Main Content Area */
+        main {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Slide Card */
+        .slide {
+            background: var(--panel-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            display: none;
+            flex-direction: row;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .slide.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Left Panel (Text) */
+        .text-panel {
+            flex: 0.4;
+            padding: 40px;
+            background: #fdfdfd;
+            border-right: 1px solid #eee;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .text-panel h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .text-panel p, .text-panel li {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .step-text {
+            opacity: 0.3;
+            transition: opacity 0.5s;
+            margin-bottom: 20px;
+            border-left: 4px solid transparent;
+            padding-left: 15px;
+        }
+
+        .step-text.active {
+            opacity: 1;
+            border-left-color: var(--accent);
+            font-weight: 500;
+            color: #000;
+        }
+
+        /* Right Panel (Visuals) */
+        .visual-panel {
+            flex: 0.6;
+            background: #f4f6f7;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        /* Animation Container */
+        .anim-stage {
+            position: relative;
+            padding: 40px; /* Space for "Miss" balls outside */
+        }
+
+        /* Grid Component */
+        .grid-3x3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            background: #34495e;
+            padding: 5px;
+            border-radius: 8px;
+            width: 300px;
+            height: 300px;
+            position: relative; /* Context for ball */
+        }
+
+        .cell {
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #bdc3c7;
+            cursor: default;
+            transition: background-color 0.3s, color 0.3s;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cell.hit {
+            background: #fab1a0;
+            color: #c0392b;
+        }
+        
+        .cell.useless {
+            background: #bdc3c7;
+            color: #fff;
+        }
+
+        /* The Flying Ball */
+        .soccer-ball {
+            position: absolute;
+            font-size: 3rem;
+            width: 3rem;
+            height: 3rem;
+            line-height: 3rem;
+            text-align: center;
+            z-index: 100;
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: none;
+            opacity: 0;
+        }
+        
+        /* Miss Zone Indicator */
+        .miss-zone {
+            position: absolute;
+            right: -100px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            height: 150px;
+            border: 2px dashed #95a5a6;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #95a5a6;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* Small Grid System */
+        .multi-grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            align-content: center;
+        }
+
+        .mini-grid-wrapper {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            background: #333;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 5px;
+        }
+
+        .mini-cell {
+            background: white;
+        }
+        
+        .mini-cell.active-line {
+            background: var(--accent);
+        }
+
+        .perm-list {
+            font-size: 0.7rem;
+            font-family: monospace;
+            color: #666;
+            text-align: center;
+            height: 60px;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        /* Controls */
+        footer {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #ddd;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background 0.2s;
+            min-width: 150px;
+        }
+
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #bdc3c7; transform: none; }
+        
+        .progress { font-size: 1rem; color: #7f8c8d; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div>Question 15(b) - Soccer Nine</div>
+    <div style="font-size: 0.8em; font-weight: normal;">2026-F5-MY MATH-CP 1B</div>
+</header>
+
+<main>
+    <div class="slide active" id="slide1">
+        <div class="text-panel">
+            <h2>Part (i): Finding \(P_3\)</h2>
+            <div class="step-text active" id="s1-txt1">
+                <p><strong>Goal:</strong> Hit 3 targets in a straight line in exactly 3 shots.</p>
+                <p>Example:</p>
+            </div>
+            <div class="step-text" id="s1-txt2">
+                <p>Watch the shots:</p>
+                <ol>
+                    <li id="s1-li1">Shot 1 ➡ Target 1 (Prob \(k\))</li>
+                    <li id="s1-li2">Shot 2 ➡ Target 4 (Prob \(k\))</li>
+                    <li id="s1-li3">Shot 3 ➡ Target 7 (Prob \(k\))</li>
+                </ol>
+            </div>
+            <div class="step-text" id="s1-txt3">
+                <p>Total Probability for this specific order:</p>
+                <div style="font-size:1.5em; color:var(--primary);">$$ P = k \times k \times k = k^3 $$</div>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <div class="anim-stage">
+                <div class="grid-3x3" id="grid1"></div>
+                <div id="ball1" class="soccer-ball">⚽</div>
+            </div>
+            <div id="s1-status" style="font-weight:bold; height:30px;"></div>
+        </div>
+    </div>
+
+    <div class="slide" id="slide2">
+        <div class="text-panel">
+            <h2>Part (i): The 8 Possible Lines</h2>
+            <div class="step-text active" id="s2-txt1">
+                <p>That was just one line. There are 8 ways to win:</p>
+            </div>
+            <div class="step-text" id="s2-txt2">
+                <ul>
+                    <li>3 Horizontal Rows</li>
+                    <li>3 Vertical Columns</li>
+                    <li>2 Diagonals</li>
+                </ul>
+                <p style="font-size:1.5em; text-align:center;">Total = 8 Lines</p>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <div class="multi-grid-container" id="linesContainer"></div>
+        </div>
+    </div>
+
+    <div class="slide" id="slide3">
+        <div class="text-panel">
+            <h2>Part (i): All 48 Cases</h2>
+            <div class="step-text active" id="s3-txt1">
+                <p>For each line, the targets can be hit in any order.</p>
+                <p>3 Targets = \(3! = 6\) Permutations.</p>
+            </div>
+            <div class="step-text" id="s3-txt2">
+                <p><strong>Calculation:</strong></p>
+                <p>8 Lines \(\times\) 6 Orders = <strong>48 Ways</strong></p>
+                <div style="border:2px solid var(--accent); padding:10px; border-radius:10px;">
+                    $$ P_3 = 48 k^3 $$
+                </div>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <div class="multi-grid-container" id="permsContainer"></div>
+        </div>
+    </div>
+
+    <div class="slide" id="slide4">
+        <div class="text-panel">
+            <h2>Part (ii): Finding \(P_4\)</h2>
+            <div class="step-text active">
+                <p>To win in exactly 4 shots:</p>
+                <ul>
+                    <li>Shot 1, 2, 3: Must contain <strong>2 Hits</strong> + <strong>1 Waste</strong>.</li>
+                    <li>Shot 4: Must be the <strong>Winning Hit</strong>.</li>
+                </ul>
+                <p>We analyze based on what the "Waste" shot is.</p>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <div style="font-size: 6rem;">🎯 + 🗑️ + 🎯</div>
+        </div>
+    </div>
+
+    <div class="slide" id="slide5">
+        <div class="text-panel">
+            <h2>Case 1: The Miss</h2>
+            <div class="step-text active" id="s5-txt1">
+                <p><strong>Scenario:</strong> 2 Hits, 1 Miss (Outside), then Win.</p>
+                <p>Prob of Miss = \( (1-9k) \)</p>
+                <p>Choose 1 out of 3 targets to be the last one to hit (Win) = \( 3\)</p>
+                <p>Choose 1 out of 8 lines to be the winning line = \( 8\)</p>
+                <p>Permutation of 2 Hits and 1 Miss = \( (4-1)! = 3!\)</p>
+            </div>
+            <div class="step-text" id="s5-txt2">
+                <p><strong>Watch the ball:</strong></p>
+                <ol>
+                    <li>Hit 1</li>
+                    <li>Hit 4</li>
+                    <li style="color:var(--accent); font-weight:bold;">MISS (Outside)</li>
+                    <li>Hit 7 (Win)</li>
+                </ol>
+            </div>
+            <div class="step-text" id="s5-txt3">
+                <p>Total = \( k^3(1-9k) (3! × 3 × 8) \)</p>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <div class="anim-stage">
+                <div class="grid-3x3" id="grid5"></div>
+                <div class="miss-zone">Outside Area</div>
+                <div id="ball5" class="soccer-ball">⚽</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" id="slide6">
+        <div class="text-panel">
+            <h2>Case 2: The Repeat</h2>
+            <div class="step-text active" id="s6-txt1">
+                <p><strong>Scenario:</strong> You hit a target that is already down.</p>
+            </div>
+            <div class="step-text" id="s6-txt2">
+                <p><strong>Watch the ball:</strong></p>
+                <ol>
+                    <li>Hit 1</li>
+                    <li>Hit 4</li>
+                    <li style="color:orange; font-weight:bold;">Hit 1 Again (Repeat)</li>
+                    <li>Hit 7 (Win)</li>
+                </ol>
+            </div>
+            <div class="step-text" id="s6-txt3">
+                <p>Total = \( k^4 × (3! × 3 × 8) \)</p>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <div class="anim-stage">
+                <div class="grid-3x3" id="grid6"></div>
+                <div id="ball6" class="soccer-ball">⚽</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" id="slide7">
+        <div class="text-panel">
+            <h2>Case 3: Useless Hit</h2>
+            <div class="step-text active" id="s7-txt1">
+                <p><strong>Scenario:</strong> Hitting a target not in the winning line.</p>
+            </div>
+            <div class="step-text" id="s7-txt2">
+                <p><strong>Watch the ball:</strong></p>
+                <ol>
+                    <li>Hit 1</li>
+                    <li>Hit 4</li>
+                    <li style="color:gray; font-weight:bold;">Hit 5 (Useless)</li>
+                    <li>Hit 7 (Win)</li>
+                </ol>
+            </div>
+            <div class="step-text" id="s7-txt3">
+                <p>Choose 1 out of 6 useless hits = \( 6\)</p>
+                <p>Total = \( k^4 × 6 × (3! × 3 × 8) \)</p>
+            </div>
+        </div>
+        <div class="visual-panel">
+            <div class="anim-stage">
+                <div class="grid-3x3" id="grid7"></div>
+                <div id="ball7" class="soccer-ball">⚽</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" id="slide8">
+        <div class="text-panel" style="flex:1;">
+            <h2>\(P_4 = \) </h2>
+            <div style="font-size: 1.3rem;">
+                <p>Summing the 3 cases:</p>
+                <p>1. Miss: \(k^3(1-9k) (3! × 3 × 8) = 144k^3(1-9k)\)</p>
+                <p>2. Repeat: \(k^4 × (3! × 3 × 8) = 144k^4\)</p>
+                <p>3. Useless: \(k^4 × 6 × (3! × 3 × 8) = 864k^4\)</p>
+                <hr>
+                <p>$$ P_4 = 144k^3 - 1296k^4 + 144k^4 + 864k^4 $$</p>
+                <p style="color:var(--accent); font-weight:bold;">$$ P_4 = 144k^3(1-2k) $$</p>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<footer>
+    <div class="progress" id="progressIndicator">Slide 1 / 8</div>
+    <button class="btn" id="nextBtn" onclick="handleNext()">Next Step ➡</button>
+</footer>
+
+<script>
+    // Configuration
+    const lines = [
+        [1,2,3], [4,5,6], [7,8,9],
+        [1,4,7], [2,5,8], [3,6,9],
+        [1,5,9], [3,5,7]
+    ];
+
+    let slideIndex = 1;
+    let stepIndex = 0;
+    const maxSlides = 8;
+    
+    // Steps per slide
+    const slideSteps = {
+        1: 5, // Intro, Shot1, Shot2, Shot3, Formula
+        2: 2, // Intro, Show
+        3: 2, // Intro, Show
+        4: 1, // Intro
+        5: 5, // Intro, Shot1, Shot2, Miss, Shot3
+        6: 5, // Intro, Shot1, Shot2, Repeat, Shot3
+        7: 5, // Intro, Shot1, Shot2, Useless, Shot3
+        8: 1
+    };
+
+    function init() {
+        createGrid('grid1');
+        createGrid('grid5');
+        createGrid('grid6');
+        createGrid('grid7');
+        generateMiniGrids('linesContainer', false);
+        generateMiniGrids('permsContainer', true);
+        updateView();
+    }
+
+    function handleNext() {
+        stepIndex++;
+        if (stepIndex >= slideSteps[slideIndex]) {
+            if (slideIndex < maxSlides) {
+                slideIndex++;
+                stepIndex = 0;
+            }
+        }
+        updateView();
+    }
+
+    function updateView() {
+        // Slide Visibility
+        document.querySelectorAll('.slide').forEach((el, idx) => {
+            if (idx + 1 === slideIndex) el.classList.add('active');
+            else el.classList.remove('active');
+        });
+
+        // Update UI
+        document.getElementById('progressIndicator').innerText = `Slide ${slideIndex} / ${maxSlides}`;
+        if (slideIndex === maxSlides && stepIndex >= slideSteps[maxSlides]-1) {
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('nextBtn').innerText = "Finished";
+        }
+
+        // Logic Dispatcher
+        if (slideIndex === 1) handleSlide1();
+        if (slideIndex === 2) handleSlide2();
+        if (slideIndex === 3) handleSlide3();
+        if (slideIndex === 5) handleSlide5(); // P4 Case 1
+        if (slideIndex === 6) handleSlide6(); // P4 Case 2
+        if (slideIndex === 7) handleSlide7(); // P4 Case 3
+    }
+
+    // --- Slide Handlers ---
+
+    function handleSlide1() {
+        const gridId = 'grid1';
+        const ballId = 'ball1';
+        
+        if (stepIndex === 0) {
+            resetGrid(gridId);
+            resetBall(ballId);
+            document.getElementById('s1-txt1').classList.add('active');
+        }
+        if (stepIndex === 1) {
+            document.getElementById('s1-txt2').classList.add('active');
+            shootBall(gridId, ballId, 1, false);
+        }
+        if (stepIndex === 2) shootBall(gridId, ballId, 4, false);
+        if (stepIndex === 3) shootBall(gridId, ballId, 7, false);
+        if (stepIndex === 4) document.getElementById('s1-txt3').classList.add('active');
+    }
+
+    function handleSlide2() {
+        if(stepIndex>=0) document.getElementById('s2-txt1').classList.add('active');
+        if(stepIndex>=1) {
+            document.getElementById('s2-txt2').classList.add('active');
+            highlightAllLines('linesContainer');
+        }
+    }
+
+    function handleSlide3() {
+        if(stepIndex>=0) document.getElementById('s3-txt1').classList.add('active');
+        if(stepIndex>=1) {
+            document.getElementById('s3-txt2').classList.add('active');
+            highlightAllLines('permsContainer');
+            document.querySelectorAll('.perm-list').forEach(el=>el.style.opacity='1');
+        }
+    }
+
+    function handleSlide5() {
+        const gridId = 'grid5';
+        const ballId = 'ball5';
+        
+        if (stepIndex===0) { resetGrid(gridId); resetBall(ballId); document.getElementById('s5-txt1').classList.add('active'); }
+        if (stepIndex===1) { document.getElementById('s5-txt2').classList.add('active'); shootBall(gridId, ballId, 1, false); }
+        if (stepIndex===2) shootBall(gridId, ballId, 4, false);
+        if (stepIndex===3) shootBallMiss(gridId, ballId); // Special Miss Shot
+        if (stepIndex===4) { shootBall(gridId, ballId, 7, false); document.getElementById('s5-txt3').classList.add('active'); }
+    }
+
+    function handleSlide6() {
+        const gridId = 'grid6';
+        const ballId = 'ball6';
+
+        if(stepIndex===0) { resetGrid(gridId); resetBall(ballId); document.getElementById('s6-txt1').classList.add('active'); }
+        if(stepIndex===1) { document.getElementById('s6-txt2').classList.add('active'); shootBall(gridId, ballId, 1, false); }
+        if(stepIndex===2) shootBall(gridId, ballId, 4, false);
+        if(stepIndex===3) shootBall(gridId, ballId, 1, false, true); // Repeat
+        if(stepIndex===4) { shootBall(gridId, ballId, 7, false); document.getElementById('s6-txt3').classList.add('active'); }
+    }
+
+    function handleSlide7() {
+        const gridId = 'grid7';
+        const ballId = 'ball7';
+
+        if(stepIndex===0) { resetGrid(gridId); resetBall(ballId); document.getElementById('s7-txt1').classList.add('active'); }
+        if(stepIndex===1) { document.getElementById('s7-txt2').classList.add('active'); shootBall(gridId, ballId, 1, false); }
+        if(stepIndex===2) shootBall(gridId, ballId, 4, false);
+        if(stepIndex===3) shootBall(gridId, ballId, 5, true); // Useless hit on 5
+        if(stepIndex===4) { shootBall(gridId, ballId, 7, false); document.getElementById('s7-txt3').classList.add('active'); }
+    }
+
+    // --- Animation Logic ---
+
+    function shootBall(gridId, ballId, targetNum, isUseless, isRepeat = false) {
+        const grid = document.getElementById(gridId);
+        const ball = document.getElementById(ballId);
+
+        const cells = grid.children;
+        const targetCell = cells[targetNum-1];
+
+        // 1. Calculate Positions
+        const gridRect = grid.getBoundingClientRect();
+        const cellRect = targetCell.getBoundingClientRect();
+        
+        // Relative position inside the grid container
+        const targetTop = cellRect.top - gridRect.top + (cellRect.height/2) - (ball.offsetHeight/2);
+        const targetLeft = cellRect.left - gridRect.left + (cellRect.width/2) - (ball.offsetWidth/2);
+
+        // 2. Initial Setup (Start from bottom center of grid)
+        ball.style.transition = 'none';
+        ball.style.top = '350px'; // Below grid
+        ball.style.left = '130px'; // Center horizontal roughly
+        ball.style.opacity = '1';
+        ball.style.transform = 'scale(0.5)';
+
+        // Force Reflow
+        void ball.offsetWidth;
+
+        // 3. Animate Move
+        ball.style.transition = 'all 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+        ball.style.top = targetTop + 'px';
+        ball.style.left = targetLeft + 'px';
+        ball.style.transform = 'scale(1)';
+
+        // 4. On Arrival (after 600ms)
+        setTimeout(() => {
+            if (isRepeat) {
+                // Flash animation for repeat
+                targetCell.style.transform = "scale(0.8)";
+                setTimeout(() => targetCell.style.transform = "scale(1)", 200);
+            } else {
+                targetCell.classList.add(isUseless ? 'useless' : 'hit');
+            }
+            // Fade ball out
+            ball.style.opacity = '0';
+        }, 600);
+    }
+
+    function shootBallMiss(gridId, ballId) {
+        const grid = document.getElementById(gridId);
+        const ball = document.getElementById(ballId);
+        const missZone = grid.parentElement.querySelector('.miss-zone');
+
+        // 1. Calc Pos (To the miss zone)
+        const gridRect = grid.getBoundingClientRect();
+        const zoneRect = missZone.getBoundingClientRect();
+        
+        const targetTop = zoneRect.top - gridRect.top + (zoneRect.height/2);
+        const targetLeft = zoneRect.left - gridRect.left + (zoneRect.width/2);
+
+        // 2. Start
+        ball.style.transition = 'none';
+        ball.style.top = '350px';
+        ball.style.left = '130px';
+        ball.style.opacity = '1';
+        ball.style.transform = 'scale(0.5)';
+
+        void ball.offsetWidth;
+
+        // 3. Move
+        ball.style.transition = 'all 0.8s ease-out';
+        ball.style.top = targetTop + 'px';
+        ball.style.left = targetLeft + 'px';
+        ball.style.transform = 'scale(1)'; // Spin?
+
+        // 4. Arrival
+        setTimeout(() => {
+            ball.innerText = '❌'; // Change to X
+            setTimeout(() => {
+                ball.style.opacity = '0';
+                 setTimeout(()=> ball.innerText = '⚽', 200); // Reset icon
+            }, 800);
+        }, 800);
+    }
+
+    function resetBall(ballId) {
+        const ball = document.getElementById(ballId);
+        ball.style.opacity = '0';
+        ball.style.top = '350px';
+    }
+
+    // --- Grid Helpers ---
+    function createGrid(id) {
+        const container = document.getElementById(id);
+        container.innerHTML = '';
+        for(let i=1; i<=9; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.innerText = i;
+            container.appendChild(cell);
+        }
+    }
+
+    function resetGrid(id) {
+        const container = document.getElementById(id);
+        Array.from(container.children).forEach(c => {
+            c.className = 'cell';
+            c.style.backgroundColor = 'white';
+        });
+    }
+
+    function generateMiniGrids(containerId, withPerms) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        lines.forEach((line, idx) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mini-grid-wrapper';
+            const grid = document.createElement('div');
+            grid.className = 'mini-grid';
+            grid.id = `mini-${containerId}-${idx}`;
+            for(let i=1; i<=9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'mini-cell';
+                grid.appendChild(cell);
+            }
+            wrapper.appendChild(grid);
+            if(withPerms) {
+                const list = document.createElement('div');
+                list.className = 'perm-list';
+                list.style.opacity = '0';
+                list.innerHTML = getPermutations(line).map(p=>p.join('→')).join('<br>');
+                wrapper.appendChild(list);
+            } else {
+                const l = document.createElement('div');
+                l.innerText = `Line ${idx+1}`;
+                l.style.fontSize="0.8em";
+                wrapper.appendChild(l);
+            }
+            container.appendChild(wrapper);
+        });
+    }
+
+    function highlightAllLines(containerId) {
+        lines.forEach((line, idx) => {
+            const grid = document.getElementById(`mini-${containerId}-${idx}`);
+            Array.from(grid.children).forEach((cell, cellIdx) => {
+                if(line.includes(cellIdx + 1)) cell.classList.add('active-line');
+            });
+        });
+    }
+
+    function getPermutations(arr) {
+        if (arr.length <= 1) return [arr];
+        let output = [];
+        for (let i = 0; i < arr.length; i++) {
+            let remaining = arr.slice(0, i).concat(arr.slice(i + 1));
+            let remainingPerms = getPermutations(remaining);
+            for (let j = 0; j < remainingPerms.length; j++) {
+                output.push([arr[i]].concat(remainingPerms[j]));
+            }
+        }
+        return output;
+    }
+
+    init();
+</script>
+
+</body>
+</html>
