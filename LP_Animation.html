@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Programming — Animated Walkthrough (Cherry's Clay)</title>
+<style>
+  :root {
+    --teal-deep: #024B57;
+    --teal: #028090;
+    --teal-mid: #0EA5A4;
+    --seafoam: #5EEAD4;
+    --teal-light: #E0F2F1;
+    --teal-pale: #F0FDFA;
+    --orange: #EA580C;
+    --orange-light: #FFEDD5;
+    --orange-pale: #FFF7ED;
+    --navy: #0F172A;
+    --slate: #475569;
+    --slate-light: #94A3B8;
+    --paper: #FAFAF9;
+    --grid: #E2E8F0;
+    --grid-strong: #94A3B8;
+    --purple: #7C3AED;
+    --purple-pale: #F5F3FF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Calibri", sans-serif;
+    background: var(--paper);
+    color: var(--navy);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+    line-height: 1.5;
+  }
+  .container { max-width: 1280px; margin: 0 auto; }
+  header { border-bottom: 3px solid var(--teal); padding-bottom: 16px; margin-bottom: 24px; }
+  .eyebrow {
+    color: var(--teal); font-weight: 700; font-size: 12px;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  h1 { font-size: 30px; color: var(--teal-deep); margin-top: 4px; }
+  .subtitle { color: var(--slate); font-style: italic; margin-top: 4px; }
+
+  .problem-card {
+    background: var(--teal-pale);
+    border: 1px solid var(--teal);
+    border-left: 6px solid var(--teal);
+    padding: 18px 22px;
+    border-radius: 4px;
+    margin-bottom: 28px;
+  }
+  .problem-card h2 {
+    font-size: 16px; color: var(--teal-deep); margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 2px;
+  }
+  .problem-card p { margin-bottom: 6px; }
+  .problem-card strong { color: var(--teal-deep); }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+
+  .canvas-wrap {
+    background: white;
+    border: 1px solid var(--grid);
+    border-radius: 8px;
+    padding: 16px;
+    position: sticky;
+    top: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  svg.graph { width: 100%; height: auto; display: block; cursor: crosshair; }
+  svg.graph.no-cursor { cursor: default; }
+
+  .canvas-toolbar {
+    display: flex; gap: 8px; align-items: center;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--grid);
+    flex-wrap: wrap; font-size: 13px;
+  }
+  .canvas-toolbar .hint {
+    color: var(--slate); font-style: italic;
+    margin-right: auto;
+  }
+  .pill-btn {
+    background: white; color: var(--purple);
+    border: 1px solid var(--purple); padding: 5px 11px;
+    border-radius: 999px; cursor: pointer;
+    font-size: 12px; font-weight: 600;
+  }
+  .pill-btn:hover { background: var(--purple-pale); }
+  .pill-btn:disabled { color: var(--slate-light); border-color: var(--grid); cursor: not-allowed; }
+  .coord-readout {
+    font-family: "Cambria Math", Georgia, serif;
+    background: var(--teal-pale); color: var(--teal-deep);
+    padding: 4px 10px; border-radius: 4px;
+    font-size: 13px; font-weight: 700;
+    min-width: 90px; text-align: center;
+  }
+
+  .panel {
+    background: white;
+    border: 1px solid var(--grid);
+    border-radius: 8px;
+    padding: 22px 24px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .step-num {
+    background: var(--teal); color: white;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px;
+    flex-shrink: 0;
+  }
+  .step-title { font-size: 19px; font-weight: 700; color: var(--navy); }
+  .step-body { font-size: 15px; color: var(--slate); margin-bottom: 14px; }
+  .step-body p { margin-bottom: 8px; }
+  .step-body strong { color: var(--navy); }
+  .math-line {
+    font-family: "Cambria Math", Georgia, serif;
+    font-size: 17px; color: var(--navy);
+    background: var(--teal-pale);
+    padding: 6px 12px; border-radius: 4px;
+    margin: 6px 0;
+    display: inline-block;
+  }
+  .highlight-box {
+    background: var(--orange-pale);
+    border-left: 4px solid var(--orange);
+    padding: 12px 14px; border-radius: 4px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .highlight-box strong { color: var(--orange); }
+
+  .controls {
+    display: flex; gap: 10px; align-items: center;
+    margin-top: 18px; flex-wrap: wrap;
+  }
+  button {
+    background: var(--teal); color: white;
+    border: none; padding: 10px 18px;
+    border-radius: 6px; cursor: pointer;
+    font-weight: 600; font-size: 14px;
+    transition: background 0.15s;
+  }
+  button:hover:not(:disabled) { background: var(--teal-deep); }
+  button:disabled { background: var(--slate-light); cursor: not-allowed; }
+  button.secondary {
+    background: white; color: var(--slate);
+    border: 1px solid var(--grid-strong);
+  }
+  button.secondary:hover:not(:disabled) {
+    background: var(--paper); border-color: var(--slate);
+  }
+  .progress { margin-left: auto; font-size: 13px; color: var(--slate); font-weight: 600; }
+  .step-dots { display: flex; gap: 6px; margin-top: 12px; }
+  .step-dot {
+    width: 30px; height: 6px; border-radius: 3px;
+    background: var(--grid); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .step-dot.done { background: var(--teal-mid); }
+  .step-dot.active { background: var(--teal-deep); }
+
+  table.vertex-table {
+    width: 100%; border-collapse: collapse;
+    margin-top: 10px; font-size: 14px;
+  }
+  table.vertex-table th, table.vertex-table td {
+    border: 1px solid var(--grid);
+    padding: 8px 10px; text-align: left;
+  }
+  table.vertex-table th {
+    background: var(--teal-pale);
+    color: var(--teal-deep); font-weight: 700;
+  }
+  table.vertex-table tr.optimal td {
+    background: var(--orange-pale);
+    font-weight: 700; color: var(--navy);
+  }
+  table.vertex-table tr.optimal td:last-child { color: var(--orange); }
+
+  .anim-line { stroke-dasharray: 1200; stroke-dashoffset: 1200; }
+  .anim-line.draw { animation: drawLine 1.0s ease-out forwards; }
+  @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+  .anim-shade { opacity: 0; }
+  .anim-shade.show { animation: fadeIn 0.6s ease-out 0.4s forwards; }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .anim-vertex { opacity: 0; }
+  .anim-vertex.show { animation: popIn 0.4s ease-out forwards; }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .label { font-family: "Calibri", sans-serif; font-size: 12px; fill: var(--slate); }
+  .label-bold { font-weight: 700; fill: var(--navy); }
+  .label-teal { fill: var(--teal-deep); font-weight: 700; }
+  .label-orange { fill: var(--orange); font-weight: 700; }
+  .label-purple { fill: var(--purple); font-weight: 700; }
+
+  .slider-wrap { margin-top: 14px; padding: 14px; background: var(--teal-pale); border-radius: 6px; }
+  .slider-wrap label {
+    display: block; font-size: 13px; color: var(--teal-deep);
+    font-weight: 700; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  input[type=range] { width: 100%; accent-color: var(--orange); }
+  .slider-readout {
+    font-family: "Cambria Math", Georgia, serif;
+    font-size: 15px; color: var(--navy); margin-top: 8px;
+    font-weight: 700;
+  }
+  .slider-readout .cost { color: var(--orange); }
+
+  .plot-tools {
+    background: var(--purple-pale);
+    border-left: 3px solid var(--purple);
+    padding: 10px 14px; border-radius: 4px;
+    margin-top: 12px; font-size: 13px;
+    color: var(--navy);
+  }
+  .plot-tools strong { color: var(--purple); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="eyebrow">5CDE M1 · Linear Programming · Animated Walkthrough</div>
+  <h1>Cherry's clay business — step by step</h1>
+  <div class="subtitle">Watch the graph build itself, then slide the cost line through the origin to find the minimum.</div>
+</header>
+
+<div class="problem-card">
+  <h2>The problem</h2>
+  <p><strong>Cherry plans to make clay bowls and clay cups.</strong> The total number of bowls and cups should be at least 22.</p>
+  <p>Each bowl uses 350 g of clay; each cup uses 200 g. She wants to use at least 5.6 kg of clay.</p>
+  <p>Costs: $10 per bowl, $8 per cup. <strong>Minimize the cost.</strong></p>
+  <p style="margin-top: 8px; font-size: 13px; color: var(--slate);">Let <em>x</em> = bowls, <em>y</em> = cups (both non-negative integers).</p>
+</div>
+
+<div class="main">
+
+  <div class="canvas-wrap">
+    <!-- Coordinate plan
+         x ∈ [-6, 30],  36 units wide
+         y ∈ [-6, 30],  36 units tall
+         Plot box: 480 px wide × 480 px tall.  Scale: 480/36 ≈ 13.33 px/unit.
+         Use exact 13.333… by using SVG floats; we'll precompute via JS-level constants in markup.
+         Origin px:  x: 60 + 6*13.333 = 60 + 80 = 140
+                     y: 540 - 6*13.333 = 540 - 80 = 460
+    -->
+    <svg id="graph" class="graph" viewBox="0 0 560 580" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid-minor" width="13.333" height="13.333" patternUnits="userSpaceOnUse">
+          <path d="M 13.333 0 L 0 0 0 13.333" fill="none" stroke="#F1F5F9" stroke-width="0.5"/>
+        </pattern>
+        <pattern id="grid-major" width="66.666" height="66.666" patternUnits="userSpaceOnUse" patternTransform="translate(140 460)">
+          <path d="M 66.666 0 L 0 0 0 66.666" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+        </pattern>
+        <marker id="arrow-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+        </marker>
+      </defs>
+
+      <!-- Plot background -->
+      <rect x="60" y="60" width="480" height="480" fill="white"/>
+      <rect x="60" y="60" width="480" height="480" fill="url(#grid-minor)"/>
+      <rect x="60" y="60" width="480" height="480" fill="url(#grid-major)"/>
+      <rect x="60" y="60" width="480" height="480" fill="none" stroke="#CBD5E1" stroke-width="1"/>
+
+      <!-- Axes through (origin x=0, origin y=0) at SVG (140, 460) -->
+      <!-- X axis: from x=-6 (px 60) to x=30 (px 540) at y_data=0 (py 460) -->
+      <line x1="60"  y1="460" x2="555" y2="460" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow-end)"/>
+      <!-- Y axis: from y=-6 (py 540) to y=30 (py 60) at x_data=0 (px 140) -->
+      <line x1="140" y1="540" x2="140" y2="48"  stroke="#475569" stroke-width="1.5" marker-end="url(#arrow-end)"/>
+
+      <!-- X tick labels every 5: x = -5, 0, 5, 10, 15, 20, 25 -->
+      <g class="label" text-anchor="middle">
+        <text x="73"  y="478">−5</text>
+        <text x="140" y="478">0</text>
+        <text x="207" y="478">5</text>
+        <text x="273" y="478">10</text>
+        <text x="340" y="478">15</text>
+        <text x="407" y="478">20</text>
+        <text x="473" y="478">25</text>
+        <text x="540" y="478">30</text>
+      </g>
+      <!-- Y tick labels (skip y=0 to avoid overlap with x-axis 0) -->
+      <g class="label" text-anchor="end">
+        <text x="132" y="528">−5</text>
+        <text x="132" y="394">5</text>
+        <text x="132" y="328">10</text>
+        <text x="132" y="261">15</text>
+        <text x="132" y="194">20</text>
+        <text x="132" y="128">25</text>
+        <text x="132" y="62">30</text>
+      </g>
+      <text x="555" y="498" class="label label-bold" text-anchor="end">x  (bowls)</text>
+      <text x="120" y="56"  class="label label-bold" text-anchor="end">y  (cups)</text>
+
+      <!-- Feasible region (clipped to first quadrant where x,y ≥ 0)
+           Constraints: x+y ≥ 22 AND 7x+4y ≥ 112 AND x≥0 AND y≥0
+           Vertices on boundary (CCW within plot box [0,30]×[0,30]):
+             (0,28) → (8,14) → (22,0) → (30,0) → (30,30) → (0,30) → close
+           In px (origin 140, 460; 13.333 px/unit):
+             (0,28)  → (140, 460 - 28*13.333) = (140, 86.67)
+             (8,14)  → (140 + 8*13.333, 460 - 14*13.333) = (246.67, 273.33)
+             (22,0)  → (140 + 22*13.333, 460) = (433.33, 460)
+             (30,0)  → (540, 460)
+             (30,30) → (540, 60)
+             (0,30)  → (140, 60)
+      -->
+      <polygon id="feasible-region"
+        points="140,86.67 246.67,273.33 433.33,460 540,460 540,60 140,60"
+        fill="#0EA5A4" fill-opacity="0.18" stroke="none"
+        class="anim-shade"/>
+
+      <!-- Constraint line 1: x + y = 22  →  points (0,22) and (22,0)
+           In px: (140, 460-22*13.333=166.67) → (140+22*13.333=433.33, 460) -->
+      <line id="line1" x1="140" y1="166.67" x2="433.33" y2="460"
+        stroke="#028090" stroke-width="2.5" class="anim-line"/>
+      <text id="line1-label" x="285" y="288" class="label label-teal" opacity="0">x + y = 22</text>
+
+      <!-- Constraint line 2: 7x + 4y = 112  →  (0,28) and (16,0)
+           In px: (140, 86.67) → (140+16*13.333=353.33, 460) -->
+      <line id="line2" x1="140" y1="86.67" x2="353.33" y2="460"
+        stroke="#EA580C" stroke-width="2.5" class="anim-line"/>
+      <text id="line2-label" x="172" y="220" class="label label-orange" opacity="0">7x + 4y = 112</text>
+
+      <!-- Vertices -->
+      <g id="vertex-A" class="anim-vertex">
+        <circle cx="140" cy="86.67" r="6" fill="#024B57" stroke="white" stroke-width="2"/>
+        <text x="152" y="80" class="label label-bold">A (0, 28)</text>
+      </g>
+      <g id="vertex-B" class="anim-vertex">
+        <circle cx="246.67" cy="273.33" r="6" fill="#024B57" stroke="white" stroke-width="2"/>
+        <text x="258" y="267" class="label label-bold">B (8, 14)</text>
+      </g>
+      <g id="vertex-C" class="anim-vertex">
+        <circle cx="433.33" cy="460" r="6" fill="#024B57" stroke="white" stroke-width="2"/>
+        <text x="445" y="454" class="label label-bold">C (22, 0)</text>
+      </g>
+
+      <!-- Optimal vertex highlight at B -->
+      <g id="vertex-optimal" opacity="0">
+        <circle cx="246.67" cy="273.33" r="11" fill="none" stroke="#EA580C" stroke-width="3">
+          <animate attributeName="r" values="11;16;11" dur="1.6s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/>
+        </circle>
+        <text x="266" y="240" class="label label-orange" font-size="14">★ MIN cost = $192</text>
+      </g>
+
+      <!-- Reference cost line through origin: 10x + 8y = 0  (for sliding-line method) -->
+      <line id="cost-line-origin"
+        x1="0" y1="0" x2="0" y2="0"
+        stroke="#7C3AED" stroke-width="2"
+        stroke-dasharray="4 4"
+        opacity="0"/>
+      <text id="cost-line-origin-label" class="label label-purple" opacity="0" font-size="12">10x + 8y = 0</text>
+
+      <!-- Sliding cost line (parallel, slid up from origin) -->
+      <line id="cost-line"
+        x1="0" y1="0" x2="0" y2="0"
+        stroke="#EA580C" stroke-width="3"
+        stroke-dasharray="6 4"
+        opacity="0"/>
+      <text id="cost-label" class="label label-orange" opacity="0" font-size="14"></text>
+
+      <!-- User-plotted points (filled by JS) -->
+      <g id="user-points"></g>
+
+      <!-- Hover crosshair (shown when click-to-plot enabled) -->
+      <g id="hover-crosshair" opacity="0" pointer-events="none">
+        <line id="hov-x" x1="0" y1="60" x2="0" y2="540" stroke="#94A3B8" stroke-width="0.5" stroke-dasharray="2 3"/>
+        <line id="hov-y" x1="60" y1="0" x2="540" y2="0" stroke="#94A3B8" stroke-width="0.5" stroke-dasharray="2 3"/>
+      </g>
+    </svg>
+
+    <div class="canvas-toolbar">
+      <span class="hint" id="canvas-hint">💡 Tip: hover the graph to read coordinates. Click to plot a point.</span>
+      <span class="coord-readout" id="coord-readout">( – , – )</span>
+      <button class="pill-btn" id="clear-points" disabled>Clear plotted points</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="step-header">
+      <div class="step-num" id="step-num">1</div>
+      <div class="step-title" id="step-title">Identify the variables</div>
+    </div>
+    <div class="step-body" id="step-body">Loading…</div>
+    <div class="step-dots" id="step-dots"></div>
+    <div class="controls">
+      <button id="prev-btn" class="secondary">◀  Previous</button>
+      <button id="next-btn">Next  ▶</button>
+      <div class="progress" id="progress">Step 1 of 8</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ───────── Coordinate transforms ─────────
+// Data x ∈ [-6, 30] → px [60, 540]; data y ∈ [-6, 30] → px [540, 60]
+const PX_PER_UNIT = 13.333333;
+const ORIGIN_PX = { x: 140, y: 460 };
+const PLOT_BOX = { x0: 60, y0: 60, x1: 540, y1: 540 };
+
+function dataToPx(x, y) {
+  return [ORIGIN_PX.x + x * PX_PER_UNIT, ORIGIN_PX.y - y * PX_PER_UNIT];
+}
+function pxToData(px, py) {
+  return [(px - ORIGIN_PX.x) / PX_PER_UNIT, (ORIGIN_PX.y - py) / PX_PER_UNIT];
+}
+
+// ───────── Step content ─────────
+const STEPS = [
+  {
+    title: "Identify the variables",
+    body: `
+      <p>Read the problem twice. <strong>What are we deciding?</strong></p>
+      <p>Cherry chooses how many bowls and how many cups to make.</p>
+      <p>So:</p>
+      <div class="math-line">Let x = number of bowls</div><br>
+      <div class="math-line">Let y = number of cups</div>
+      <div class="plot-tools">
+        <strong>Try it:</strong> hover the graph to read coordinates, or click anywhere to drop a test point. Notice the axes now show negative regions — but Cherry's answers will all live in the first quadrant (x, y ≥ 0).
+      </div>`,
+    action: a => a.reset(),
+    plottable: true
+  },
+  {
+    title: "Set up the constraints",
+    body: `
+      <p><strong>Translate plain English → inequality.</strong></p>
+      <p>"Total bowls + cups at least 22":</p>
+      <div class="math-line">x + y ≥ 22</div>
+      <p style="margin-top:10px;">"At least 5.6 kg = 5600 g of clay":</p>
+      <div class="math-line">350x + 200y ≥ 5600</div>
+      <p style="margin-top:10px;">Divide both sides by 50 to simplify:</p>
+      <div class="math-line">7x + 4y ≥ 112</div>
+      <p style="margin-top:10px;">Plus non-negativity and integers:</p>
+      <div class="math-line">x ≥ 0,  y ≥ 0,  integers</div>
+      <div class="highlight-box">
+        <strong>⚠ Watch the units.</strong> 5.6 kg = 5600 g. AI sometimes ignores this. You must catch it.
+      </div>`,
+    action: a => a.reset(),
+    plottable: true
+  },
+  {
+    title: "Plot the first line: x + y = 22",
+    body: `
+      <p>Find two easy points:</p>
+      <p>· When x = 0:  y = 22  →  point <strong>(0, 22)</strong></p>
+      <p>· When y = 0:  x = 22  →  point <strong>(22, 0)</strong></p>
+      <p style="margin-top: 10px;">Draw the line through these points (solid line, because of "≥").</p>
+      <div class="highlight-box">
+        <strong>Test (0, 0):</strong> 0 + 0 = 0, which is NOT ≥ 22. So the feasible side is <em>away</em> from the origin.
+      </div>
+      <div class="plot-tools">
+        <strong>Try it:</strong> click on the graph at (0, 22) and (22, 0) to verify the line passes through both points.
+      </div>`,
+    action: a => a.drawLine1(),
+    plottable: true
+  },
+  {
+    title: "Plot the second line: 7x + 4y = 112",
+    body: `
+      <p>Two easy points:</p>
+      <p>· When x = 0:  4y = 112  →  y = 28  →  <strong>(0, 28)</strong></p>
+      <p>· When y = 0:  7x = 112  →  x = 16  →  <strong>(16, 0)</strong></p>
+      <p style="margin-top: 10px;">Draw the line (solid, because of "≥").</p>
+      <div class="highlight-box">
+        <strong>Test (0, 0):</strong> 7(0) + 4(0) = 0, NOT ≥ 112. Feasible side is away from origin.
+      </div>
+      <div class="plot-tools">
+        <strong>Try it:</strong> click (0, 28) and (16, 0) to confirm.
+      </div>`,
+    action: a => a.drawLine2(),
+    plottable: true
+  },
+  {
+    title: "Shade the feasible region",
+    body: `
+      <p>The feasible region is where <strong>ALL</strong> constraints overlap:</p>
+      <p>· Above (or on) the line  x + y = 22</p>
+      <p>· Above (or on) the line  7x + 4y = 112</p>
+      <p>· Inside the first quadrant (x ≥ 0, y ≥ 0)</p>
+      <div class="highlight-box">
+        <strong>Notice:</strong> The region extends infinitely up and to the right — an <em>unbounded</em> region. Fine for a MINIMUM problem, but a maximum would not exist!
+      </div>
+      <div class="plot-tools">
+        <strong>Try it:</strong> click anywhere on the graph to test if a point is inside the feasible region. Try (15, 15), (5, 5), (-2, 25)…
+      </div>`,
+    action: a => a.shadeRegion(),
+    plottable: true
+  },
+  {
+    title: "Find the vertices (corners)",
+    body: `
+      <p>The minimum cost will occur at a corner. Find each one:</p>
+      <p>· <strong>A:</strong> y-axis ∩ line 2  →  (0, 28)</p>
+      <p>· <strong>B:</strong> line 1 ∩ line 2 — solve simultaneously:</p>
+      <div class="math-line" style="font-size: 14px;">x + y = 22  and  7x + 4y = 112</div>
+      <p style="margin-top: 4px;">From the first: y = 22 − x. Substitute:</p>
+      <div class="math-line" style="font-size: 14px;">7x + 4(22 − x) = 112</div>
+      <div class="math-line" style="font-size: 14px;">3x = 24  →  x = 8, y = 14</div>
+      <p style="margin-top: 6px;">· <strong>C:</strong> line 1 ∩ x-axis  →  (22, 0)</p>`,
+    action: a => a.showVertices(),
+    plottable: true
+  },
+  {
+    title: "Test each vertex in C = 10x + 8y",
+    body: `
+      <p>Substitute every vertex into the cost function:</p>
+      <table class="vertex-table">
+        <thead>
+          <tr><th>Vertex</th><th>(x, y)</th><th>C = 10x + 8y</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>A</td><td>(0, 28)</td><td>10(0) + 8(28) = $224</td></tr>
+          <tr class="optimal"><td>B</td><td>(8, 14)</td><td>10(8) + 8(14) = <strong>$192 ★</strong></td></tr>
+          <tr><td>C</td><td>(22, 0)</td><td>10(22) + 8(0) = $220</td></tr>
+        </tbody>
+      </table>
+      <div class="highlight-box">
+        <strong>Answer:</strong> 8 bowls + 14 cups → minimum cost = <strong>$192</strong>.
+      </div>`,
+    action: a => a.highlightOptimal(),
+    plottable: true
+  },
+  {
+    title: "Verify with the sliding-line method",
+    body: `
+      <p>Plot the reference line <strong>10x + 8y = 0</strong> (passes through the origin). Then slide it parallel until it touches the feasible region.</p>
+      <p>The dashed <span style="color: var(--purple); font-weight: 700;">purple</span> line is the reference at C = 0. The <span style="color: var(--orange); font-weight: 700;">orange</span> line is the sliding cost line — drag the slider!</p>
+      <p>Since the y-coefficient is positive (b = 8 > 0):</p>
+      <div class="math-line" style="font-size: 14px;">↑ slide UP from origin → C increases</div>
+      <p style="margin-top: 8px;">Slide up just until the line first touches the region — that's the MIN.</p>
+      <div class="slider-wrap">
+        <label>Slide C from 0 upward</label>
+        <input type="range" id="cost-slider" min="0" max="320" step="2" value="0"/>
+        <div class="slider-readout">
+          C = $<span id="cost-value">0</span>
+          <div style="color: var(--slate); font-weight: normal; font-size: 13px; margin-top: 4px;">
+            <span class="cost" id="cost-status">→ Drag the slider up from 0…</span>
+          </div>
+        </div>
+      </div>
+      <div class="highlight-box">
+        <strong>Sliding-line rule:</strong> when y-coefficient b &gt; 0, the MIN sits where the line FIRST touches the region as we slide up from the origin. That's vertex B!
+      </div>`,
+    action: a => a.activateSlider(),
+    plottable: false
+  }
+];
+
+// ───────── Animation controller ─────────
+const anim = {
+  line1: document.getElementById('line1'),
+  line1Label: document.getElementById('line1-label'),
+  line2: document.getElementById('line2'),
+  line2Label: document.getElementById('line2-label'),
+  region: document.getElementById('feasible-region'),
+  vertexA: document.getElementById('vertex-A'),
+  vertexB: document.getElementById('vertex-B'),
+  vertexC: document.getElementById('vertex-C'),
+  vertexOpt: document.getElementById('vertex-optimal'),
+  costLineOrigin: document.getElementById('cost-line-origin'),
+  costLineOriginLabel: document.getElementById('cost-line-origin-label'),
+  costLine: document.getElementById('cost-line'),
+  costLabel: document.getElementById('cost-label'),
+
+  reset() {
+    this.line1.classList.remove('draw');
+    this.line2.classList.remove('draw');
+    this.line1.style.strokeDashoffset = '';
+    this.line2.style.strokeDashoffset = '';
+    this.line1Label.setAttribute('opacity', '0');
+    this.line2Label.setAttribute('opacity', '0');
+    this.region.classList.remove('show');
+    this.vertexA.classList.remove('show');
+    this.vertexB.classList.remove('show');
+    this.vertexC.classList.remove('show');
+    this.vertexOpt.setAttribute('opacity', '0');
+    this.costLineOrigin.setAttribute('opacity', '0');
+    this.costLineOriginLabel.setAttribute('opacity', '0');
+    this.costLine.setAttribute('opacity', '0');
+    this.costLabel.setAttribute('opacity', '0');
+    void this.line1.getBoundingClientRect();
+  },
+  showLine1Static() {
+    this.line1.style.strokeDashoffset = '0';
+    this.line1Label.setAttribute('opacity', '1');
+  },
+  showLine2Static() {
+    this.line2.style.strokeDashoffset = '0';
+    this.line2Label.setAttribute('opacity', '1');
+  },
+  drawLine1() {
+    this.reset();
+    this.line1.classList.add('draw');
+    setTimeout(() => this.line1Label.setAttribute('opacity', '1'), 800);
+  },
+  drawLine2() {
+    this.reset();
+    this.showLine1Static();
+    this.line2.classList.add('draw');
+    setTimeout(() => this.line2Label.setAttribute('opacity', '1'), 800);
+  },
+  shadeRegion() {
+    this.reset();
+    this.showLine1Static();
+    this.showLine2Static();
+    this.region.classList.add('show');
+  },
+  showVertices() {
+    this.reset();
+    this.showLine1Static();
+    this.showLine2Static();
+    this.region.classList.add('show');
+    setTimeout(() => this.vertexA.classList.add('show'), 0);
+    setTimeout(() => this.vertexB.classList.add('show'), 350);
+    setTimeout(() => this.vertexC.classList.add('show'), 700);
+  },
+  highlightOptimal() {
+    this.reset();
+    this.showLine1Static();
+    this.showLine2Static();
+    this.region.classList.add('show');
+    this.vertexA.classList.add('show');
+    this.vertexB.classList.add('show');
+    this.vertexC.classList.add('show');
+    setTimeout(() => this.vertexOpt.setAttribute('opacity', '1'), 100);
+  },
+  activateSlider() {
+    this.reset();
+    this.showLine1Static();
+    this.showLine2Static();
+    this.region.classList.add('show');
+    this.vertexA.classList.add('show');
+    this.vertexB.classList.add('show');
+    this.vertexC.classList.add('show');
+    // Show the reference line through origin
+    this.drawCostLine(this.costLineOrigin, 0);
+    this.costLineOrigin.setAttribute('opacity', '1');
+    // Position label near the reference line
+    const [labX, labY] = dataToPx(-3, 3.75); // line at C=0 passes through (-3, 3.75)
+    this.costLineOriginLabel.setAttribute('x', labX - 30);
+    this.costLineOriginLabel.setAttribute('y', labY - 6);
+    this.costLineOriginLabel.setAttribute('opacity', '1');
+    // Show sliding line at C=0 initially (overlapping reference line)
+    this.costLine.setAttribute('opacity', '1');
+    this.costLabel.setAttribute('opacity', '1');
+    this.updateCostLine(0);
+
+    const slider = document.getElementById('cost-slider');
+    const valueLabel = document.getElementById('cost-value');
+    const statusLabel = document.getElementById('cost-status');
+    if (slider && !slider._wired) {
+      slider.addEventListener('input', e => {
+        const C = +e.target.value;
+        valueLabel.textContent = C;
+        this.updateCostLine(C);
+        if (C === 0) {
+          statusLabel.textContent = '→ Reference line at origin. Slide up to find the MIN.';
+          statusLabel.style.color = 'var(--purple)';
+        } else if (C < 192) {
+          statusLabel.textContent = '✗ Line still below the region — slide up more';
+          statusLabel.style.color = 'var(--slate-light)';
+        } else if (Math.abs(C - 192) <= 2) {
+          statusLabel.textContent = '★ Just touching at B (8, 14) — this is the MIN!';
+          statusLabel.style.color = 'var(--orange)';
+        } else {
+          statusLabel.textContent = '✓ Line cuts through the region (C is too large for MIN)';
+          statusLabel.style.color = 'var(--teal)';
+        }
+      });
+      slider._wired = true;
+    }
+  },
+
+  // Generic cost-line drawer for line 10x + 8y = C
+  drawCostLine(lineEl, C) {
+    // Line passes through:
+    //   x = 0 → y = C/8
+    //   y = 0 → x = C/10
+    // For C=0, both are origin — use slope to extend.
+    // Slope: dy/dx = -10/8 = -1.25
+    // Pick two data-space points along the line that map within the visible plot.
+    // Use parametric form starting at any point on the line.
+    let pts;
+    if (C === 0) {
+      pts = [[-6, 7.5], [24, -30]];   // y = -1.25 x
+    } else {
+      pts = [[0, C/8], [C/10, 0]];
+    }
+    const p1 = dataToPx(pts[0][0], pts[0][1]);
+    const p2 = dataToPx(pts[1][0], pts[1][1]);
+    // Clip to plot rectangle
+    const clipped = clipLineToBox(p1, p2, PLOT_BOX);
+    if (clipped) {
+      lineEl.setAttribute('x1', clipped[0][0]);
+      lineEl.setAttribute('y1', clipped[0][1]);
+      lineEl.setAttribute('x2', clipped[1][0]);
+      lineEl.setAttribute('y2', clipped[1][1]);
+    }
+  },
+
+  updateCostLine(C) {
+    this.drawCostLine(this.costLine, C);
+    if (C > 0) {
+      // Position label near upper end of the line in plot
+      const [lx, ly] = dataToPx(C/10 - 4, 5);
+      this.costLabel.setAttribute('x', Math.min(Math.max(lx, 200), 480));
+      this.costLabel.setAttribute('y', Math.max(80, ly));
+      this.costLabel.textContent = `10x + 8y = ${C}`;
+      this.costLabel.setAttribute('opacity', '1');
+    } else {
+      this.costLabel.setAttribute('opacity', '0');
+    }
+  }
+};
+
+// Cohen-Sutherland-ish line clipping to a rectangle (returns 2 px points or null)
+function clipLineToBox(p1, p2, box) {
+  let [x1, y1] = p1, [x2, y2] = p2;
+  const dx = x2 - x1, dy = y2 - y1;
+  const ts = [];
+  if (dx !== 0) {
+    ts.push((box.x0 - x1) / dx);
+    ts.push((box.x1 - x1) / dx);
+  }
+  if (dy !== 0) {
+    ts.push((box.y0 - y1) / dy);
+    ts.push((box.y1 - y1) / dy);
+  }
+  const valid = ts.filter(t => {
+    const x = x1 + t * dx, y = y1 + t * dy;
+    return x >= box.x0 - 0.5 && x <= box.x1 + 0.5 &&
+           y >= box.y0 - 0.5 && y <= box.y1 + 0.5;
+  });
+  if (valid.length < 2) return null;
+  const tMin = Math.min(...valid), tMax = Math.max(...valid);
+  return [
+    [x1 + tMin * dx, y1 + tMin * dy],
+    [x1 + tMax * dx, y1 + tMax * dy]
+  ];
+}
+
+// ───────── Click-to-plot points and hover crosshair ─────────
+const svg = document.getElementById('graph');
+const userPointsGroup = document.getElementById('user-points');
+const coordReadout = document.getElementById('coord-readout');
+const clearBtn = document.getElementById('clear-points');
+const canvasHint = document.getElementById('canvas-hint');
+const hoverCrosshair = document.getElementById('hover-crosshair');
+const hovX = document.getElementById('hov-x');
+const hovY = document.getElementById('hov-y');
+
+let plottable = true;
+
+function svgEventToPx(evt) {
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX; pt.y = evt.clientY;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return null;
+  const local = pt.matrixTransform(ctm.inverse());
+  return [local.x, local.y];
+}
+
+function snapToHalfUnit(value) {
+  return Math.round(value * 2) / 2;
+}
+
+function isInsidePlot(px, py) {
+  return px >= PLOT_BOX.x0 && px <= PLOT_BOX.x1 && py >= PLOT_BOX.y0 && py <= PLOT_BOX.y1;
+}
+
+function isInsideFeasibleRegion(x, y) {
+  return (x + y >= 22) && (7*x + 4*y >= 112) && (x >= 0) && (y >= 0);
+}
+
+svg.addEventListener('mousemove', evt => {
+  if (!plottable) {
+    hoverCrosshair.setAttribute('opacity', '0');
+    coordReadout.textContent = '( – , – )';
+    return;
+  }
+  const p = svgEventToPx(evt);
+  if (!p) return;
+  const [px, py] = p;
+  if (!isInsidePlot(px, py)) {
+    hoverCrosshair.setAttribute('opacity', '0');
+    coordReadout.textContent = '( – , – )';
+    return;
+  }
+  hoverCrosshair.setAttribute('opacity', '1');
+  hovX.setAttribute('x1', px); hovX.setAttribute('x2', px);
+  hovY.setAttribute('y1', py); hovY.setAttribute('y2', py);
+  const [dx, dy] = pxToData(px, py);
+  coordReadout.textContent = `( ${snapToHalfUnit(dx)}, ${snapToHalfUnit(dy)} )`;
+});
+
+svg.addEventListener('mouseleave', () => {
+  hoverCrosshair.setAttribute('opacity', '0');
+  coordReadout.textContent = '( – , – )';
+});
+
+svg.addEventListener('click', evt => {
+  if (!plottable) return;
+  const p = svgEventToPx(evt);
+  if (!p) return;
+  const [px, py] = p;
+  if (!isInsidePlot(px, py)) return;
+  const [dx, dy] = pxToData(px, py);
+  const xs = snapToHalfUnit(dx);
+  const ys = snapToHalfUnit(dy);
+  const [snapPx, snapPy] = dataToPx(xs, ys);
+
+  // Decide colour: green if in region, red if not (only meaningful after region appears)
+  const inRegion = isInsideFeasibleRegion(xs, ys);
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('cx', snapPx);
+  dot.setAttribute('cy', snapPy);
+  dot.setAttribute('r', '5');
+  dot.setAttribute('fill', inRegion ? '#10B981' : '#EF4444');
+  dot.setAttribute('stroke', 'white');
+  dot.setAttribute('stroke-width', '1.5');
+
+  const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  txt.setAttribute('x', snapPx + 8);
+  txt.setAttribute('y', snapPy - 6);
+  txt.setAttribute('class', 'label label-bold');
+  txt.setAttribute('font-size', '11');
+  txt.textContent = `(${xs}, ${ys})`;
+
+  userPointsGroup.appendChild(dot);
+  userPointsGroup.appendChild(txt);
+  clearBtn.disabled = false;
+});
+
+clearBtn.addEventListener('click', () => {
+  userPointsGroup.innerHTML = '';
+  clearBtn.disabled = true;
+});
+
+function setPlottable(on) {
+  plottable = on;
+  if (on) {
+    svg.classList.remove('no-cursor');
+    canvasHint.textContent = '💡 Tip: hover the graph to read coordinates. Click to plot a point.';
+  } else {
+    svg.classList.add('no-cursor');
+    canvasHint.textContent = '✋ Plotting is paused while you use the slider.';
+    hoverCrosshair.setAttribute('opacity', '0');
+    coordReadout.textContent = '( – , – )';
+  }
+}
+
+// ───────── Step navigation ─────────
+let currentStep = 0;
+const stepNumEl = document.getElementById('step-num');
+const stepTitleEl = document.getElementById('step-title');
+const stepBodyEl = document.getElementById('step-body');
+const progressEl = document.getElementById('progress');
+const dotsEl = document.getElementById('step-dots');
+const prevBtn = document.getElementById('prev-btn');
+const nextBtn = document.getElementById('next-btn');
+
+STEPS.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'step-dot';
+  d.addEventListener('click', () => goTo(i));
+  dotsEl.appendChild(d);
+});
+
+function render() {
+  const s = STEPS[currentStep];
+  stepNumEl.textContent = currentStep + 1;
+  stepTitleEl.textContent = s.title;
+  stepBodyEl.innerHTML = s.body;
+  progressEl.textContent = `Step ${currentStep + 1} of ${STEPS.length}`;
+  prevBtn.disabled = currentStep === 0;
+  nextBtn.disabled = currentStep === STEPS.length - 1;
+  Array.from(dotsEl.children).forEach((d, i) => {
+    d.classList.toggle('active', i === currentStep);
+    d.classList.toggle('done', i < currentStep);
+  });
+  setPlottable(s.plottable !== false);
+  s.action(anim);
+}
+
+function goTo(n) {
+  currentStep = Math.max(0, Math.min(STEPS.length - 1, n));
+  render();
+}
+
+prevBtn.addEventListener('click', () => goTo(currentStep - 1));
+nextBtn.addEventListener('click', () => goTo(currentStep + 1));
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowLeft')  goTo(currentStep - 1);
+  if (e.key === 'ArrowRight') goTo(currentStep + 1);
+});
+
+render();
+</script>
+</body>
+</html>
