@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The cube and the cylinder — animated</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f6f3ea;
+    --surface: #fdfbf4;
+    --ink: #2c2924;
+    --ink-soft: #4a4640;
+    --muted: #6f6c66;
+    --line: #d8d3c4;
+    --line-strong: #b9b3a1;
+    --blue: #1d5f9e;
+    --blue-bg: #e6f1fb;
+    --amber: #b27418;
+    --amber-bg: #faecd9;
+    --green: #3b6d11;
+    --green-bg: #eaf3de;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: Georgia, "Times New Roman", "Cambria", serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    padding: 2.5rem 1.25rem 4rem;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .container { max-width: 880px; margin: 0 auto; }
+
+  .ui-sans, .ui-sans * { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif; }
+
+  header { margin-bottom: 1.5rem; }
+
+  h1 {
+    font-size: 38px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.4rem;
+  }
+
+  .lead {
+    color: var(--muted);
+    font-size: 17px;
+    font-style: italic;
+  }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 500;
+    margin: 3rem 0 0.5rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--line);
+    letter-spacing: -0.01em;
+  }
+
+  h2 .subtle {
+    font-size: 16px;
+    font-style: italic;
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 0.5rem;
+  }
+
+  h3 {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  p { margin: 0.6em 0; }
+
+  .problem {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.5rem 1.75rem;
+    margin: 1.5rem 0 2.5rem;
+  }
+  .problem ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+  .problem li { margin: 0.4em 0; }
+
+  .case {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin: 1.25rem 0 2.5rem;
+  }
+
+  svg.diagram {
+    display: block;
+    width: 100%;
+    max-width: 680px;
+    height: auto;
+    margin: 0 auto;
+  }
+
+  .panel {
+    background: rgba(252, 247, 232, 0.55);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 1.25rem 0;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .lgnd {
+    display: flex; gap: 18px; flex-wrap: wrap;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 6px;
+  }
+  .lgi { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 0.5px solid var(--line-strong); }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .row:last-child { border-bottom: none; }
+  .lb { font-size: 13px; color: var(--muted); }
+  .vl { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .tg {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tg-w { background: var(--amber-bg); color: var(--amber); }
+  .tg-o { background: var(--blue-bg); color: var(--blue); }
+  .tg-s { background: var(--green-bg); color: var(--green); }
+
+  .ctrls { display: flex; gap: 10px; margin-top: 1rem; flex-wrap: wrap; }
+
+  button {
+    padding: 9px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    transition: background 0.15s, transform 0.1s;
+  }
+  button:hover { background: #f5f1e6; }
+  button:active { transform: scale(0.98); }
+  button.primary {
+    background: var(--blue);
+    color: white;
+    border-color: transparent;
+  }
+  button.primary:hover { background: #154e85; }
+
+  .bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+    background: var(--line);
+  }
+  .bar-sub { background: var(--blue); transition: width 0.1s linear; }
+
+  .formula {
+    background: #f5efde;
+    border-left: 3px solid var(--amber);
+    padding: 0.85rem 1.25rem;
+    margin: 0.85rem 0;
+    font-family: "Cambria Math", "Cambria", Georgia, serif;
+    font-size: 16.5px;
+    border-radius: 0 4px 4px 0;
+  }
+  .formula em { font-style: italic; }
+  .formula strong { font-weight: 700; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { background: rgba(178, 116, 24, 0.08); font-weight: 600; color: var(--ink); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td.num { font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: rgba(216, 211, 196, 0.18); }
+
+  ul.takeaways { padding-left: 1.4rem; margin: 0.5rem 0; }
+  ul.takeaways li { margin: 0.5em 0; }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>The cube and the cylinder</h1>
+  <p class="lead">An animated comparison of partial vs full submersion.</p>
+</header>
+
+<div class="problem">
+  <h3>Problem setup</h3>
+  <p>A right circular cylindrical vessel has base radius <strong>16 cm</strong>. A metal cube of side <strong>12 cm</strong> sinks to the bottom of the vessel, with no overflow. Two cases are compared:</p>
+  <ul>
+    <li><strong>Case A</strong> — initial water depth <strong>9 cm</strong>. Result: cube partially submerged (top exposed).</li>
+    <li><strong>Case B</strong> — initial water depth <strong>12 cm</strong>. Result: cube fully submerged.</li>
+  </ul>
+</div>
+
+<!-- ======================== Case A ======================== -->
+<h2>Case A <span class="subtle">— partial submersion (initial water 9 cm)</span></h2>
+<div class="case">
+  <svg class="diagram" id="svgA" viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel" id="panelA"></div>
+
+  <div class="ctrls">
+    <button class="primary" data-play="A">Drop the cube</button>
+    <button data-reset="A">Reset</button>
+  </div>
+
+  <h3>Working</h3>
+  <p>Volume of water: V<sub>w</sub> = π × 16² × 9 = <strong>2304π cm³</strong> ≈ 7238 cm³.</p>
+  <p>First test the "fully submerged" assumption — what depth would that imply?</p>
+  <div class="formula">
+    <em>h</em> &nbsp;=&nbsp; (2304π + 1728) ÷ 256π &nbsp;≈&nbsp; <strong>11.15 cm</strong>
+  </div>
+  <p>But 11.15 cm &lt; 12 cm (cube height), so the assumption is impossible. The cube must be partially submerged. Water occupies the annular region around the cube:</p>
+  <div class="formula">
+    V<sub>w</sub> = (256π − 144) × <em>h</em> &nbsp;⇒&nbsp; <em>h</em> = 2304π / (256π − 144) ≈ <strong>10.96 cm</strong>
+  </div>
+  <p style="margin-top: 0.85rem;"><strong>Answer:</strong> water depth ≈ <strong>11.0 cm</strong> (3 s.f.).</p>
+</div>
+
+<!-- ======================== Case B ======================== -->
+<h2>Case B <span class="subtle">— full submersion (initial water 12 cm)</span></h2>
+<div class="case">
+  <svg class="diagram" id="svgB" viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel" id="panelB"></div>
+
+  <div class="ctrls">
+    <button class="primary" data-play="B">Drop the cube</button>
+    <button data-reset="B">Reset</button>
+  </div>
+
+  <h3>Working</h3>
+  <p>Volume of water: V<sub>w</sub> = π × 16² × 12 = <strong>3072π cm³</strong> ≈ 9651 cm³.</p>
+  <p>Test the "fully submerged" assumption:</p>
+  <div class="formula">
+    <em>h</em> &nbsp;=&nbsp; (3072π + 1728) ÷ 256π &nbsp;=&nbsp; 12 + 1728 / (256π) ≈ <strong>14.15 cm</strong>
+  </div>
+  <p>Since 14.15 cm ≥ 12 cm, the assumption holds — the cube is genuinely fully submerged. Water rises by 14.15 − 12 = <strong>2.15 cm</strong>.</p>
+  <p style="margin-top: 0.85rem;"><strong>Answer:</strong> water depth ≈ <strong>14.1 cm</strong> (3 s.f.).</p>
+  <p style="margin-top: 0.85rem; font-style: italic; color: var(--muted);">Notice in the animation: as the cube descends, the water level <em>stops rising</em> the moment the cube becomes fully submerged. After that point, additional descent doesn't displace any new water.</p>
+</div>
+
+<!-- ======================== Comparison ======================== -->
+<h2>Side-by-side comparison</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Quantity</th>
+      <th>Case A</th>
+      <th>Case B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Initial water depth</td><td class="num">9.00 cm</td><td class="num">12.00 cm</td></tr>
+    <tr><td>Initial water volume</td><td class="num">2304π ≈ 7238 cm³</td><td class="num">3072π ≈ 9651 cm³</td></tr>
+    <tr><td>Final water depth</td><td class="num"><strong>≈ 10.96 cm</strong></td><td class="num"><strong>≈ 14.15 cm</strong></td></tr>
+    <tr><td>Water level rise</td><td class="num">1.96 cm</td><td class="num">2.15 cm</td></tr>
+    <tr><td>Cube submerged height</td><td class="num">10.96 cm of 12 cm</td><td class="num">12 cm (all)</td></tr>
+    <tr><td>Fraction of cube under water</td><td class="num">~91.4%</td><td class="num">100%</td></tr>
+    <tr><td>Submerged cube volume</td><td class="num">~1579 cm³</td><td class="num">1728 cm³</td></tr>
+    <tr><td>Status</td><td><span class="tg tg-w">Partial</span></td><td><span class="tg tg-s">Full</span></td></tr>
+  </tbody>
+</table>
+
+<!-- ======================== Takeaways ======================== -->
+<h2>Key formulas to remember</h2>
+<div class="formula">
+  <strong>Partial submersion:</strong> &nbsp; <em>h</em> = V<sub>water</sub> &divide; (A<sub>vessel</sub> &minus; A<sub>cube cross-section</sub>)
+</div>
+<div class="formula">
+  <strong>Full submersion:</strong> &nbsp; <em>h</em> = (V<sub>water</sub> + V<sub>cube</sub>) &divide; A<sub>vessel</sub>
+</div>
+
+<ul class="takeaways">
+  <li><strong>Always test the "full submersion" assumption first.</strong> Compute <em>h</em> using the full-submersion formula. If <em>h</em> ≥ cube height, you're done. If not, switch to the partial-submersion formula.</li>
+  <li><strong>Critical threshold for this problem:</strong> initial water depth ≥ 12 − 1728/(256π) ≈ <strong>9.85 cm</strong> guarantees full submersion. Case A at 9 cm sits just below this cutoff; Case B at 12 cm sits comfortably above.</li>
+  <li><strong>Sanity check:</strong> the new water depth must be greater than the original (water can only rise when an object is added) and at most equal to the cube's height plus a constant rise — never less than what conservation predicts.</li>
+</ul>
+
+<footer>
+  Open in any modern browser. Press the play buttons to animate each case.
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+const PI = Math.PI;
+const SC = 10;       // pixels per cm
+const VB = 300;      // y of vessel bottom
+const CUBE_PX = 120; // 12 cm cube at scale 10
+
+const cases = {
+  A: {
+    initialDepth: 9,
+    waterLevel: cb => {
+      if (cb >= 9) return 9;
+      return (2304 * PI - 144 * cb) / (256 * PI - 144);
+    },
+    finalDepth: 2304 * PI / (256 * PI - 144),
+    legendOriginal: "Original water (2304π cm³)"
+  },
+  B: {
+    initialDepth: 12,
+    waterLevel: cb => {
+      if (cb >= 12) return 12;
+      const transition = 1728 / (256 * PI);
+      const fullDepth  = 12 + 1728 / (256 * PI);
+      if (cb <= transition) return fullDepth;
+      return (3072 * PI - 144 * cb) / (256 * PI - 144);
+    },
+    finalDepth: 12 + 1728 / (256 * PI),
+    legendOriginal: "Original water (3072π cm³)"
+  }
+};
+
+function buildSVG(svg, caseId) {
+  svg.setAttribute("role", "img");
+  svg.innerHTML = `
+    <title>Case ${caseId}: cube placed in cylindrical vessel</title>
+    <desc>Cross-section animation of a cube being placed into a cylindrical water vessel.</desc>
+    <defs>
+      <marker id="ar${caseId}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <clipPath id="vClip${caseId}"><rect x="180" y="60" width="320" height="240"/></clipPath>
+    </defs>
+
+    <path d="M 180 300 A 160 14 0 0 1 500 300" fill="none" stroke="#999" stroke-width=".5" stroke-dasharray="3 3" opacity=".5"/>
+
+    <g clip-path="url(#vClip${caseId})">
+      <rect class="waterBase" x="180" y="0" width="320" height="0" fill="#5DA9F5" opacity=".55"/>
+      <rect class="waterRise" x="180" y="0" width="320" height="0" fill="#EF9F27" opacity=".55"/>
+      <ellipse class="surf" cx="340" cy="0" rx="160" ry="10" fill="#BA7517" opacity=".55"/>
+      <line class="origLine" x1="180" y1="0" x2="500" y2="0" stroke="#185FA5" stroke-width=".8" stroke-dasharray="4 3" opacity=".7"/>
+      <g class="cubeG" transform="translate(0,0)">
+        <rect x="280" y="60" width="120" height="120" fill="#A8A8A8" stroke="#5F5E5A" stroke-width="2"/>
+        <line x1="280" y1="85" x2="400" y2="85" stroke="#7A7A7A" stroke-width=".5" opacity=".4"/>
+        <line x1="280" y1="115" x2="400" y2="115" stroke="#7A7A7A" stroke-width=".5" opacity=".4"/>
+        <line x1="280" y1="145" x2="400" y2="145" stroke="#7A7A7A" stroke-width=".5" opacity=".4"/>
+      </g>
+      <rect class="wet" x="280" y="300" width="120" height="0" fill="#3789D5" opacity=".4" pointer-events="none"/>
+    </g>
+
+    <line x1="180" y1="60" x2="180" y2="300" stroke="#2c2924" stroke-width="2"/>
+    <line x1="500" y1="60" x2="500" y2="300" stroke="#2c2924" stroke-width="2"/>
+    <path d="M 180 300 A 160 14 0 0 0 500 300" fill="none" stroke="#2c2924" stroke-width="2"/>
+    <ellipse cx="340" cy="60" rx="160" ry="14" fill="none" stroke="#2c2924" stroke-width="2"/>
+
+    <line class="ctLine" x1="400" y1="60" x2="635" y2="60" stroke="#5F5E5A" stroke-width=".5" stroke-dasharray="3 3"/>
+    <text class="ctLabel" x="635" y="55" text-anchor="end" font-size="12" font-family="-apple-system, sans-serif" fill="#2c2924" font-weight="500">cube top: 12.00 cm</text>
+
+    <line class="wLine" x1="500" y1="0" x2="635" y2="0" stroke="#854F0B" stroke-width=".5" stroke-dasharray="3 3"/>
+    <text class="wLabel" x="635" y="0" text-anchor="end" font-size="12" font-family="-apple-system, sans-serif" fill="#854F0B" font-weight="500">water: 0.00 cm</text>
+
+    <text class="origText" x="510" y="0" font-size="11" font-family="-apple-system, sans-serif" fill="#185FA5" font-style="italic">original</text>
+
+    <line x1="190" y1="334" x2="490" y2="334" stroke="#999" stroke-width=".5" marker-start="url(#ar${caseId})" marker-end="url(#ar${caseId})"/>
+    <text x="340" y="350" text-anchor="middle" font-size="12" font-family="-apple-system, sans-serif" fill="#5F5E5A">diameter = 32 cm  (radius = 16 cm)</text>
+  `;
+}
+
+function buildPanel(panel, caseId) {
+  const legendOrig = cases[caseId].legendOriginal;
+  panel.innerHTML = `
+    <div class="lgnd">
+      <div class="lgi"><span class="sw" style="background:#5DA9F5"></span>${legendOrig}</div>
+      <div class="lgi"><span class="sw" style="background:#EF9F27"></span>Risen water</div>
+      <div class="lgi"><span class="sw" style="background:#3789D5;opacity:.55"></span>Submerged cube</div>
+    </div>
+    <div class="row"><span class="lb">Water depth</span><span class="vl dv">0.00 cm</span></div>
+    <div class="row"><span class="lb">Submerged height of cube</span><span class="vl sh">0.00 cm of 12 cm</span></div>
+    <div class="row"><span class="lb">Cube submerged in water</span><span class="vl frac">0.000 cubes (0.0%)</span></div>
+    <div style="padding:6px 0">
+      <div class="bar"><div class="bar-sub" style="width:0%"></div></div>
+    </div>
+    <div class="row"><span class="lb">Status</span><span class="tg tg-o stB">Cube above water</span></div>
+  `;
+}
+
+function createAnimator(caseId) {
+  const svg = document.getElementById("svg" + caseId);
+  const panel = document.getElementById("panel" + caseId);
+  const params = cases[caseId];
+  const initialDepth = params.initialDepth;
+  const Y_INIT = VB - initialDepth * SC;
+
+  buildSVG(svg, caseId);
+  buildPanel(panel, caseId);
+
+  // Set the (constant) water-base rect once.
+  const wb = svg.querySelector(".waterBase");
+  wb.setAttribute("y", Y_INIT);
+  wb.setAttribute("height", initialDepth * SC);
+
+  // Set original-line position (constant).
+  const ol = svg.querySelector(".origLine");
+  ol.setAttribute("y1", Y_INIT);
+  ol.setAttribute("y2", Y_INIT);
+
+  // Set "original" floating label (constant).
+  const ot = svg.querySelector(".origText");
+  ot.setAttribute("y", Y_INIT + 4);
+
+  let aId = null;
+
+  function setState(cb, wc) {
+    const dy = (12 - cb) * SC;
+    svg.querySelector(".cubeG").setAttribute("transform", "translate(0," + dy + ")");
+
+    const wy = VB - wc * SC;
+
+    // Water rise
+    const wr = svg.querySelector(".waterRise");
+    const riseH = Math.max(0, Y_INIT - wy);
+    wr.setAttribute("y", wy);
+    wr.setAttribute("height", riseH);
+
+    // Surface
+    svg.querySelector(".surf").setAttribute("cy", wy);
+
+    // Water indicator
+    const wl = svg.querySelector(".wLine");
+    wl.setAttribute("y1", wy);
+    wl.setAttribute("y2", wy);
+    const wlbl = svg.querySelector(".wLabel");
+    wlbl.setAttribute("y", wy + 13);
+    wlbl.textContent = "water: " + wc.toFixed(2) + " cm";
+
+    // Cube top indicator
+    const cty = VB - (cb + 12) * SC;
+    const cby = VB - cb * SC;
+    const ctl = svg.querySelector(".ctLine");
+    ctl.setAttribute("y1", cty);
+    ctl.setAttribute("y2", cty);
+    const ctlbl = svg.querySelector(".ctLabel");
+    ctlbl.setAttribute("y", cty - 5);
+    ctlbl.textContent = "cube top: " + (cb + 12).toFixed(2) + " cm";
+
+    // Wet overlay
+    const wetTop = Math.max(cty, wy);
+    const wetH = Math.max(0, cby - wetTop);
+    const wet = svg.querySelector(".wet");
+    wet.setAttribute("y", wetTop);
+    wet.setAttribute("height", wetH);
+
+    // Stats
+    const subH = Math.min(12, Math.max(0, wc - cb));
+    const frac = subH / 12;
+    panel.querySelector(".dv").textContent = wc.toFixed(2) + " cm";
+    panel.querySelector(".sh").textContent = subH.toFixed(2) + " cm of 12 cm";
+    panel.querySelector(".frac").textContent = frac.toFixed(3) + " cubes (" + (frac * 100).toFixed(1) + "%)";
+    panel.querySelector(".bar-sub").style.width = (frac * 100).toFixed(1) + "%";
+
+    const st = panel.querySelector(".stB");
+    if (cb + 12 <= wc + 1e-6) {
+      st.textContent = "Fully submerged";
+      st.className = "tg tg-s stB";
+    } else if (cb >= wc - 1e-6) {
+      st.textContent = "Cube above water";
+      st.className = "tg tg-o stB";
+    } else {
+      st.textContent = "Top exposed — partial";
+      st.className = "tg tg-w stB";
+    }
+  }
+
+  function reset() {
+    if (aId) cancelAnimationFrame(aId);
+    setState(12, initialDepth);
+  }
+
+  function play() {
+    if (aId) cancelAnimationFrame(aId);
+    const t0 = performance.now();
+    const dur = 2400;
+    function frame(t) {
+      const e = (t - t0) / dur;
+      if (e >= 1) {
+        setState(0, params.finalDepth);
+        aId = null;
+        return;
+      }
+      const eased = 1 - Math.pow(1 - e, 2);
+      const cb = 12 * (1 - eased);
+      const wc = params.waterLevel(cb);
+      setState(cb, wc);
+      aId = requestAnimationFrame(frame);
+    }
+    aId = requestAnimationFrame(frame);
+  }
+
+  return { play, reset };
+}
+
+const anims = {
+  A: createAnimator("A"),
+  B: createAnimator("B")
+};
+
+// Hook up buttons.
+document.querySelectorAll("[data-play]").forEach(btn => {
+  btn.addEventListener("click", () => anims[btn.dataset.play].play());
+});
+document.querySelectorAll("[data-reset]").forEach(btn => {
+  btn.addEventListener("click", () => anims[btn.dataset.reset].reset());
+});
+
+// Initialize both diagrams.
+anims.A.reset();
+anims.B.reset();
+</script>
+</body>
+</html>
